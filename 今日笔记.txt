@@ -1,0 +1,141 @@
+一、如何增加功能：(如删除操作)
+	在后端：
+		1.  在com.xxx.dao.sql的xml文件中编写ibatis的sql；
+		2.  在相应的DAO层接口和实现类中添加自己的方法；
+		4.  在相应的Service层接口和实现类中添加自己的方法，并去调用dao；
+		5.  在相应的Controller层(RS)中添加自己的方法，并去调用service，返回一个result。
+		
+	在前端：
+		1.  用Flex在页面添加相应的组件；
+		2.  在label.properties中添加自己使用的字符串；
+		3.  在Menu.xml中添加相应的node(权限)；
+		4.  在相应的Delegate代理类中，编写自己的方法，使用remoteObject去调用后台Controller的方法。
+		5.  添加自己的event，编写事件处理的方法，并调用Delegate代理类。
+		
+
+		
+二、Flex的集合
+
+	1.  ArrayCollection类：
+	
+		ArrayCollection是Array的包装类，
+		提供更方便的如添加和移除数据项以及能够创建游标启用要轻松地存储数组中的最后读取的位置等方法。
+		
+		ArrayCollection可以为它注册一个集合改变的监听事件。CollectionEvent.COLLECTION_CHANGE
+		
+		方法：
+			将数据插入集合：
+			addItemAt
+			addItem
+			检测数据项是否存在：
+			getItemIndex
+			contains
+		JAVA里的LIST、ARRAYLIST对应到FLEX里可以用ArrayCollection来接收。
+		eg:通过JAVA写一个连接ORACLE的方法，返回一个ARRAYLIST，该ARRAYLIST里放的一般是一个个的HASHMAP。
+		如果通过RemoteObject（或其他方式）来调用该方法时，FLEX端接收到的肯定是个OBJECT，这个时候可以强制转换成ArrayCollection。
+		然后通过遍历该ArrayCollection，来取得存每条数据的OBJECT（JAVA里的HASHMAP）。
+
+		FLEX里没有MAP类，但只要你知道了JAVA里MAP的KEY，那么FLEX里就可以作为OBJECT的一个属性来访问。
+		
+		
+	
+	2.  XMLListCollection类：
+	
+		XMLListCollection是XML对象的包装类，提供的功能有：根据索引访问数据，添加新对象以及游标等方法。
+		XMLListCollection对于处理XML对象以及经常需要解析XML为数组时特别有用。
+		
+	
+三、Flex的Alert
+
+	Flex的消息提示框由mx.controls.Alert类负责创建，通常通过调用静态方法show(即可实现提示框的创建)：
+	
+	public static function show(text:String = "", 
+								title:String = "",
+                                flags:uint = 0x4 /* Alert.OK */, 
+                                parent:Sprite = null, 
+                                closeHandler:Function = null, 
+                                iconClass:Class = null, 
+                                defaultButtonFlag:uint = 0x4 /* Alert.OK */):Alert｛
+								......｝
+	
+	1.  text : 消息提示内容;
+	2.  title : 消息框标题;
+	3.  flags : 要放置哪些按钮在消息框中，是按钮的组合 Alert.OK(默认)  Alert.CANCEL  Alert.YES  Alert.NO，使用按位或操作符显示多个按钮，如Alert.OK | Alert.CANCEL;
+	4.  parent : Alert 控件的父对象;
+	5.  closeHandler : 指定消息框中按钮点击事件的侦听器,点击事件发生后，调用此方法，并传一个CloseEvent事件过去，此事件的detail属性能得到具体按的哪一个按钮;
+	6.  iconClass : 指定对话框中消息文本左侧的图标;
+	7.  defaultButtonFlag : 指定默认按钮的标志位。
+	
+	show方法内所有参数都是非必选的。
+
+	参数flags表示弹出框下面生成几种按钮，alert类提供了四个按钮：是、否、确定和取消，有以下几个组合，可以直接填入数字：
+
+	1-  Alert.YES 
+	2-  Alert.NO 
+	3-  Alert.YES | Alert.NO 
+	4-  Alert.OK 
+	5-  Alert.OK | Alert.YES 
+	6-  Alert.OK | Alert.NO 
+	7-  Alert.OK | Alert.YES | Alert.NO 
+	8-  Alert.CANCEL 
+	9-  Alert.YES | Alert.CANCEL 
+	10-  Alert.NO | Alert.CANCEL 
+	11-  Alert.YES | Alert.NO | Alert.CANCEL 
+	12-  Alert.OK | Alert.CANCEL 
+	13-  Alert.OK | Alert.YES | Alert.CANCEL 
+	14-  Alert.OK | Alert.NO | Alert.CANCEL 
+	15-  Alert.OK | Alert.YES | Alert.NO | Alert.CANCEL 
+	16-  Alert.OK （和4一样） 
+
+	参数clickListener可实现点击按钮事件监听，也就是说可以通过监听来判断用户点击的是哪个按钮，从而根据不同选择实现不同操作。
+	
+	可以自定义按钮的label和大小:
+		Alert.buttonWidth = 100;
+
+        Alert.yesLabel = "Magenta";
+
+        Alert.noLabel = "Blue";
+
+        Alert.cancelLabel = "Green";
+		
+		
+四、 Flex的Command,Delegate,Service:
+
+	这三者的关系简单说来就是前者调用后者，后者为前者返回数据的关系！
+	整个工作流程可以描述如下:
+	1、Command类产生一个业务代理（delegate）的实例;
+	2、Command类调用delegate中的业务处理方法，上例中为getProducts();
+	3、Delegate查找到service，并调用service;
+	4、过了一会，服务器返回结果给delegate;
+	5、Delegate立即将结果传给command的result()方法或者调用command的fault()方法。
+
+	通过这个机制的运用，一方面使得Delegate可以被重用，另一方面将服务器端调用进行了封装，delegate变成了客户端代码和服务器端代码的唯一接口。这样做也为客户端和服务器端代码分别开发提供了可能。
+	
+五、导出功能
+
+	前端：
+	
+		1.  在页面添加导出按钮；
+		2.  给按钮添加点击事件监听方法；
+		3.  在监听方法中，使用URLVariables对象和ExportUtil类的export方法：
+			a.  将页面上的筛选条件框中的数据放入URLVariables对象中；
+			b.  使用export方法：  ExportUtil.export("export.do?method=xxx",urlVar,this.pageBar);
+	
+	后端：
+	
+		1.  在相应的xxx.service.dto包里，创建自己的导出数据传输类xxxDtoExprotDto:
+				其成员变量根据导出的要求来定。
+				
+		2.  在相应的XXXSql.xml中，添加自己的sql语句，将要在Excel显示的字段查出来，返回类型为导出数据传输类xxxDtoExprotDto。
+			在相应的xxxDaoImpl类中，添加自己的查询方法getXXXExp，返回类型为导出数据传输类xxxDtoExprotDto。
+			在相应的xxxServiceImpl类中，添加自己的查询方法，getXXXExp，返回类型为导出数据传输类xxxDtoExprotDto。
+	
+		3.  在ExportServiceImpl中创建自己的导出方法：
+				public void xxx(String local, BinDto binDto,HttpServletResponse response){...}
+				在方法中使用PoiUtil.exportExcel(sheetName, ArrayList<ExcelExportDto>, response.getOutputStream(), yyyy_MM_dd)方法。
+			
+			
+		4.  在ExportController里添加自己的方法，名字同ExportUtil.export("export.do?method=xxx",urlVar,this.pageBar)的XXX;
+			 a. 创建相应的Dto对象，如BinDto；
+			 b. 通过request.getParameter来接受从前端传来的数据，如local等，注意处理null；
+			 c. 调用ExportService中的相应方法，传入local，Dto类，response。

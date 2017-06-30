@@ -1,0 +1,206 @@
+1.  Flex主要包结构：
+
+	1.  business ：代理对象,xxxDelegate.as (用于连接后台的类);
+	2.  model ：模型层，ModelLocator.as (存一些全局数据，如授权信息之类的) Constants.as (一些常量);
+	3.  util ：一些工具类 xxx.as (验证对象是否为空，数据校验之类的) ;
+	4.  view ：前台页面视图 xxx.mxml (里面写得有script页面逻辑);
+	5.  vo ：页面数据对象 xxx.as (存前台页面视图中的数据,查询条件输入框之类的);
+
+
+2.  新建一个页面，需要些什么：
+
+	前台：
+	
+		a.  在label.properties和message.properties中添加自己的字符串;
+		b.  用flex画出页面  ->  xxx.mxml模块;
+		c.  新建一个页面数据对象Vo,成员变量对应页面的数据 -> xxxVo.as;
+		d.  在Menu.xml中添加自己的权限;
+		e.  在ChoosePanelUtil.as中添加自己的模块;
+		f.  在service.mxml中添加自己的
+			<mx:RemoteObject id="CompanyRo"
+				channelSet="{cs}"
+				destination="companyRo"
+				showBusyCursor="true">;
+			与后台service建立连接；
+		g.  检查.actionScriptProperties中是否有自己的模块。
+		h.  新建代理对象xxxDelegate.as,在xxx.mxml中添加script，写页面逻辑。
+	
+	后台：
+		
+		a.  在xxx.dao.sql包中，写ibatis的sql语句,xxxSql.xml;
+		b.  在xxx.dao包中，写自己的dao层口,xxxDao.java;
+		c.  在xxx.dao.impl包中,写自己的dao层实现类xxxDaoImpl.java;
+		d.  在xxx.service包中,写自己的service层接口,xxxService.java;
+		e.  在xxx.service.impl包中,写自己的service层实现类,xxxServiceImpl.java;
+		f.  在xxx.rs包中,写自己的Controller,xxxRs.java;
+		g.  创建自己的result类xxxDtoResult.java和数据传输类xxxDto.java;
+		h.  在Spring配置文件中，将自己的类添加到IOC容器中，一层一层注入。
+		
+		
+3.  itemRenderer 和 itemEditor 区别：
+
+		itemRenderer一开始就加载并显示,itemEditor使用时才加载显示。
+		
+		<mx:itemRenderer>
+			<mx:Component>
+				<mx:HBox>
+					<mx:Label selectable="true" text="{outerDocument.dg.dataProvider.getItemIndex(data)+1}"/>
+				</mx:HBox>
+			</mx:Component>
+		</mx:itemRenderer>
+		
+		<mx:itemEditor>
+			<mx:Component>
+				<mx:TextInput text="{data.abbreviation}" 
+							  editable="{data.id==null || data.editAble}"
+							  change="textinput1_changeHandler(event)">
+					<mx:Script>
+						<![CDATA[
+							protected function textinput1_changeHandler(event:Event):void
+							{
+								// 若改变了输入框的值，则对象中的属性也要改变
+								data.abbreviation = event.currentTarget.text;
+							}
+						]]>
+					</mx:Script>
+				</mx:TextInput>
+							  
+			</mx:Component>
+		</mx:itemEditor>
+		
+		
+		
+flex简单业务的实现:
+
+	doSearch():
+	
+		1.	定义一个ArrayCollection对象,并加上[Bindable];
+		2.	定义一个DataGrid表格,将上面的ArrayCollection对象赋值给dataprovider,当作数据源;
+		3.  给查询按钮添加一个点击监听器，或者给输入框添加enter回车监听器;
+		4.  新建一个当前页面的VO对象，并存入查询条件输入框中的值;
+		5.  给代理对象设置一个回调函数，指向我们自定义的方法;
+		6.  调用代理对象的get方法，并传入VO对象当作查询条件;
+		7.	在代理对象中编写get方法，使用remoteObject调用后台的方法，返回的值用Responder接收;
+		8.	若返回的数据正确，会调用Responder第一个参数的方法，并将结果传过去;
+		9.	使用callBack.call()方法将得到的结果回调到页面代理对象的回调函数中,这里一般得到一个List;
+		8.  将List赋值给页面定义的ArrayCollection对象。
+
+	新增删除需要编号自动调整，保持编号是完整的升序：
+	
+		【text="{outerDocument.dg.dataProvider.getItemIndex(data)+1}"】
+		方法一、渲染器
+		<mx:itemRenderer>
+			<mx:Component>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label selectable="true"  text="{outerDocument.dg.dataProvider.getItemIndex(data)+1}"/>
+				</mx:HBox>
+			</mx:Component>
+		</mx:itemRenderer>
+		方法二、不渲染
+		给<mx:DataGridColumn>添加labelFunction="rowNum"属性
+		protected function rowNum(item : Object,column : int):String{
+			return String(this.dg.dataProvider.getItemIndex(item) + 1);
+		}
+		
+	
+
+	删除功能：
+	
+		1.  删除页面上临时数据(如表格中新增状态的某行数据)
+				如：dataList.removeItemAt(dataList.getItemIndex(xxx));
+		2.  从数据库中删除数据:
+				更新显示时，可以用调用doSearch()再次执行一次搜索方法，也可以从前端页面删除
+				如：for(var i = 0; i < dataList.length; i++){
+					
+						if(delDto.id == AbbreviationVo(dataList.getItemAt(i)).id){
+							dataList.removeItemAt(i);
+						}
+					}
+	
+		
+		
+	
+点击新增按钮在最末自动升序增加一行记录，编辑完后，按保存按钮保存，可批量保存。
+		
+	要点：
+		1.  在VO类中加几个重要属性：
+			addList : ArrayCollection 新增集合
+			editAble : Boolean 是否可编辑
+		2.  在页面的Script中加几个重要属性：
+			addList : ArrayCollection 新增集合
+		
+	protected function buttonAdd_clickHandler(event:MouseEvent):void
+		{
+			var vo:AbbreviationVo = new AbbreviationVo();
+			if(abbreviationList == null) {
+				abbreviationList = new ArrayCollection();
+			}
+			if(addList == null) {
+				addList = new ArrayCollection();
+			}
+			addList.addItem(vo);
+			//页面多出一行空数据,若已经查询,则在最后一行,若没有查询,则在第一行。
+			abbreviationList.addItem(vo);
+		}
+	
+	<mx:DataGridColumn headerRenderer="mx.controls.dataGridClasses.DataGridItemRenderer"
+							headerText="{resourceManager.getString('label','Abbreviation.abb')}" 
+							dataField="abbreviation" sortable="false" editable="{data.editAble}">
+			<mx:itemEditor>
+				<mx:Component>
+					//data就是datagrid接收到的List对象中的VO对象。
+					//data.id用于新增时，还没存到数据库，id为空，则可编辑。data.editAble用于判断已存入的数据。
+					<mx:TextInput text="{data.abbreviation}" editable="{data.id == null || data.editAble}" change="textinput1_changeHandler(event)"> 
+						
+						<mx:Script>
+							<![CDATA[
+								protected function textinput1_changeHandler(event:Event):void
+								{
+									data.abbreviation = event.currentTarget.text;
+								}
+							]]>
+						</mx:Script>
+						
+					</mx:TextInput>						
+				</mx:Component>
+			</mx:itemEditor>
+		</mx:DataGridColumn>
+
+
+前端输入验证:
+
+	protected function dg_itemEditEndHandler(event:DataGridEvent):void{
+		
+		//没有更新数据直接返回
+		if (event.reason == DataGridEventReason.CANCELLED){
+			return;
+		}
+		//去掉无用空格
+		event.currentTarget.itemEditorInstance.text = StringUtil.trim(event.currentTarget.itemEditorInstance.text);
+		//存储临时输入的数据
+		var tmp:String = event.currentTarget.itemEditorInstance.text;
+		
+		if(event.dataField == "abbreviation" || event.dataField == "definition"){
+			var input:TextInput=TextInput(dg.itemEditorInstance);
+			//如果输入为空，则弹出提示
+			if(tmp == null || StringUtil.trim(tmp) == ''){
+				input.errorString= resourceManager.getString('label','Material.PDerrorString7');
+				//中断事件传播
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+			if((event.dataField == "abbreviation" && temp.length > 40) || (event.dataField == "definition" && temp.length > 500)){
+				input.errorString = "输入长度超过限制!";
+				//中断事件传播
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+		}
+	}
+
+	
+
+	
+	
+	
+	

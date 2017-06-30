@@ -1,0 +1,67 @@
+QuartZ基础：
+
+	QuartZ分为三个部分：
+		1. Job作业：定义了要执行的任务是什么(编写类实现Job接口)；
+		2. Trigger触发器：定义了什么时候执行任务(simpleTrigger||CronTrigger)；
+		3. Scheduler计划表：将作业和触发器连接起来；
+		4. 通过job的JobDataMap()可传值到正在执行的任务中去。
+
+	QuartZ注解：
+		1. @PersistJobDataAfterExecution：作业执行完毕后才持久化作业的数据
+		2. @DisallowConcurrentExecution：不允许同时执行同一个作业
+	
+
+简单使用步骤：
+
+1. 导入jar包：
+	<!-- QuartZ -->
+	<dependency>
+	  <groupId>org.quartz-scheduler</groupId>
+	  <artifactId>quartz</artifactId>
+	  <version>2.2.1</version>
+	</dependency>
+	<dependency>
+	  <groupId>org.quartz-scheduler</groupId>
+	  <artifactId>quartz-jobs</artifactId>
+	  <version>2.2.1</version>
+	</dependency>
+	
+2. 根据需要编写Job类：
+
+	public class HelloJob implements Job {
+
+		@Override
+		public void execute(JobExecutionContext arg0) throws JobExecutionException {
+
+			System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
+										.format(new Date(System.currentTimeMillis())));
+		}
+
+	}
+	
+3. 编写主线程
+	public class TestQuartz{
+		
+		public void test(){
+		
+			try {
+			Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
+			
+			//通过反射实例化真正的工作
+			JobDetail job = JobBuilder.newJob(HelloJob.class)
+					.withIdentity("job1", "group1").build();
+					
+			Trigger trigger = TriggerBuilder.newTrigger()
+					.withIdentity("trigger1", "group1")
+						.withSchedule(CronScheduleBuilder.cronSchedule("0/5 * * * * ?"))
+					.build();
+			//SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(1).repeatForever()
+			
+			scheduler.scheduleJob(job, trigger);
+			scheduler.start();
+			//scheduler.shutdown();
+		} catch (SchedulerException e) {
+			e.printStackTrace();
+		}
+		}
+	}

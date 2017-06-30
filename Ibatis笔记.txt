@@ -1,0 +1,9 @@
+ibatis
+
+Iterate 的属性： 
+      prepend： 可被覆盖的 SQL 语句组成部分，添加在语句的前面（可选） 
+      property： 类型为 java.util.List 的用于遍历的元素（必选） 
+      open：  整个遍历内容体开始的字符串，用于定义括号（可选） 
+      close： 整个遍历内容体结束的字符串，用于定义括号（可选） 
+      conjunction： 每次遍历内容之间的字符串，用于定义 AND 或 OR（可选） 
+      遍历类型为 java.util.List的元素。 

@@ -1,0 +1,37 @@
+private String getRequestPara(HttpServletRequest request){
+			Map requestMap = new HashMap();
+			String parameterName = null;
+			String[] parameterValues = null;
+			for (Enumeration _em = request.getParameterNames(); _em
+					.hasMoreElements();) {
+				parameterName = (String) _em.nextElement();
+				parameterValues = request
+						.getParameterValues(parameterName);
+				if (parameterValues.length > 1) {
+					for (int i = 0; i < parameterValues.length; i++) {
+						parameterValues[i] = parameterValues[i];
+					}
+					requestMap.put(parameterName, parameterValues);
+				} else {
+					requestMap.put(parameterName, parameterValues[0]);
+				}
+			}
+			return requestMap.toString();
+	}
+	
+	
+
+	
+	
+/**
+ * 对所有的Date类型在接受时候进行格式化
+ */
+@InitBinder
+public void initBinder(WebDataBinder binder, WebRequest request) {
+	binder.registerCustomEditor(Date.class, new MyDateEditor());
+	binder.registerCustomEditor(Long.class, new MyLongEditor());
+	binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
+	binder.registerCustomEditor(Double.class, new CustomNumberEditor(Double.class, true));
+}
+
+

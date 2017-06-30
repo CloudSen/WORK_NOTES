@@ -1,0 +1,154 @@
+FTP相关:
+
+1.基础：
+	(1)
+	(2)Windows使用GBK或gb2312系统编码，Linux使用UTF-8系统编码；
+	
+2.重要类：
+	(1)FTP类：提供了DIY Client所需要的基本功能，继承与SocketClient；
+		常用属性： 
+			_replyCode
+			_replyString
+			DEFAULT_PORT：默认端口21
+			ASCII_FILE_TYPE:ASCII文件类型值为0
+			EBCDIC_FILE_TYPE:1
+			BINARY_FILE_TYPE:2
+			LOCAL_FILE_TYPE:3
+	(2)FTPClient类：封装了FTP类，基本包含了所需要的所有功能
+		使用步骤：
+			a.通过client的connect(String host,int port)来连接到服务器；
+			b.通过client得到replycode，用FTPReply的isPositiveCompletion(replycode)方法，来判断连接是否成功；
+			c.通过client设置系统编码、路径、文件类型等；
+			d.通过login(username,password)和logout()方法登录登出服务器。
+
+			
+	
+	
+	/**
+     * 上传文件
+     * @param targetName 上传到ftp文件名
+     * @param localFile 本地文件路径
+     * @return
+     */
+    public boolean upload(String targetName,String localFile){
+        //连接ftp server
+        FTPClient ftpClient = connect();
+
+        if(ftpClient==null){
+            System.out.println("连接FTP服务器["+host+":"+port+"]失败！");
+            return false;
+        }
+        File file = new File(localFile);
+        //设置上传后文件名
+        if(targetName==null||"".equals(targetName))
+            targetName = file.getName();
+        FileInputStream fis = null;
+        try{
+            long now = System.currentTimeMillis();
+            //开始上传文件
+            fis = new FileInputStream(file);
+            System.out.println(">>>开始上传文件："+file.getName());
+            boolean ok = ftpClient.storeFile(targetName, fis);
+            if(ok){//上传成功
+                long times = System.currentTimeMillis() - now;
+                System.out.println(String.format(">>>上传成功：大小：%s,上传时间：%d秒", formatSize(file.length()),times/1000));
+            }else//上传失败
+                System.out.println(String.format(">>>上传失败：大小：%s", formatSize(file.length())));
+        }catch(IOException e){
+            System.err.println(String.format(">>>上传失败：大小：%s", formatSize(file.length())));
+            e.printStackTrace();
+            return false;
+        }finally{
+            try{
+                if(fis!=null)
+                    fis.close();
+                close(ftpClient);
+            }catch(Exception e){}
+        }
+        return true;
+    }
+	
+	/**
+     * 下载文件
+     * @param localPath 本地存放路径
+     * @return
+     */
+    public int download(String localPath){
+        //  连接ftp server
+        FTPClient ftpClient = connect();
+        if(ftpClient==null){
+            System.out.println("连接FTP服务器["+host+":"+port+"]失败！");
+            return 0;
+        }
+
+        File dir = new File(localPath);
+        if(!dir.exists())
+            dir.mkdirs();
+        FTPFile[] ftpFiles = null;
+        try{
+            ftpFiles = ftpClient.listFiles();
+            if(ftpFiles==null||ftpFiles.length==0)
+                return 0;
+        }catch(IOException e){
+            return 0;
+        }
+        int c = 0;
+        for(int i=0;i<ftpFiles.length;i++){
+            FileOutputStream fos = null;
+            try{
+                String name = ftpFiles[i].getName();
+                fos = new FileOutputStream(new File(dir.getAbsolutePath()+File.separator+name));
+                System.out.println("<<<开始下载文件："+name);
+
+                long now = System.currentTimeMillis();
+                boolean ok = ftpClient.retrieveFile(new String(name.getBytes("UTF-8"),"ISO-8859-1"), fos);
+                if(ok){//下载成功
+                    long times = System.currentTimeMillis() - now;
+                    System.out.println(String.format("<<<下载成功：大小：%s,上传时间：%d秒", formatSize(ftpFiles[i].getSize()),times/1000));
+                    c++;
+                }else{
+                    System.out.println("<<<下载失败");
+                }
+            }catch(IOException e){
+                System.err.println("<<<下载失败");
+                e.printStackTrace();
+            }finally{
+                try{
+                    if(fos!=null)
+                        fos.close();
+                    close(ftpClient);
+                }catch(Exception e){}
+            }
+        }
+        return c;
+    }
+	
+	
+	private static final DecimalFormat DF = new DecimalFormat("#.##");
+    /**
+     * 格式化文件大小（B，KB，MB，GB）
+     * @param size
+     * @return
+     */
+    private String formatSize(long size){
+        if(size<1024){
+            return size + " B";
+        }else if(size<1024*1024){
+            return size/1024 + " KB";
+        }else if(size<1024*1024*1024){
+            return (size/(1024*1024)) + " MB";
+        }else{
+            double gb = size/(1024*1024*1024);
+            return DF.format(gb)+" GB";
+        }
+    }
+	
+	/**
+     * 测试
+     */
+	public static void main(String args[]){
+        FTPTest ftp = new FTPTest("192.168.1.10",21,null,null,"/temp/2016/12");
+        ftp.upload("newFile.rar", "D:/ftp/TeamViewerPortable.rar");
+        System.out.println("");
+        ftp.download("D:/ftp/");
+    }

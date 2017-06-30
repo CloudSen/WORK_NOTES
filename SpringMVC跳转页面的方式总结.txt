@@ -1,0 +1,37 @@
+SpringMVC控制器跳转页面的几种方式：
+	1.返回值为void【无渲染器】：
+		(1)使用response的自带API输出：
+			response.getWriter().println("hello");
+		(2)使用response的重定向：
+			response.sendRedirect("index.jsp");
+		(3)使用request的转发：
+			request.setAttribute("message","it's forward");
+			request.getRequestDispatcher("index.jsp").forward(request,response);
+		(4)直接return跳转页面：
+			@RequestMapping("/test")
+			public void test(){
+				return "index.jsp";//转发式
+				return "forward:index.jsp";//转发式2
+				return "redirect:index.jsp";//重定向式
+			}
+			
+	2.返回值不为空时【有渲染器】：
+		(1)直接return跳转页面：
+			@RequestMapping("/test")
+			public String test(){
+				return "index";
+				return "forward:index";
+				return "redirect:index";
+			}
+		(2)使用ModelAndView通过视图解析器：
+			@RequestMapping("/test")
+			public ModelAndView test(HttpServletRequest request,HttpServletResponse response)
+				throws Exception{
+				
+				ModelAndView mav = new ModelAndView();
+				//封装要显示的数据
+				mav.addObject("msg","it's mav");
+				//指定视图
+				mav.setViewName("index");
+				return mav;
+			}

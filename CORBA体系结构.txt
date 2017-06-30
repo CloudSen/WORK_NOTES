@@ -1,0 +1,9 @@
+CORBA(Common Object Request Broker Architecture):公共对象请求调度体系结构
+	IDL：接口定义语言
+	ORB：对象请求代理
+	IIOP：ORB之间的互操作协议
+	
+WSDL(Web Services Description Language)网络服务描述语言：
+	基于XML，用于描述Web Service以及如何对它们进行访问。
+	
+密码可以稍微加密啥的（DES、AES、SHA1、MD5）

@@ -1,0 +1,160 @@
+Hessian基础：
+
+1. 概念：
+	(1)Hessian是一个轻量级的Remoting onhttp工具；
+	(2)基于HTTP协议，采用RPC协议(Remote Procedure Call Protocol)，通过网络从远程计算机请求服务；
+	(3)采用二进制编解码，适合发送二进制数据；
+	(4)提供了简单的RMI(RemoteMethodInvocation)远程方法调用功能；
+
+2.Hession服务器端：
+	(1)包含Hession的jar包；
+	(2)设计一个公共接口，用来给客户端调用；
+	(3)编写一个类继实现接口并继承HessianServlet，完成该接口的功能；
+	(4)在web.xml中配置好相应的Servlet；
+	(5)将POJO对象进行序列化，实现Serializable接口，以便使用二进制传输。
+
+3.Hession客户端：
+	(1)java的客户端需要包含Hession的jar包；
+	(2)具有和服务器端一样的接口和POJO；
+	(3)利用HessianProxyFactory代理工厂调用远程接口；
+	
+4.Hession的使用：
+	(1)服务端：WebService
+	
+	接口：
+		package com.service;
+		import com.entity.User;
+
+		/**
+		 * @author CloudSen
+		 * @Date 2017年6月27日 上午10:26:45
+		 * @Version 1.0
+		 * @Description 测试Hession的使用，公共API接口
+		 */
+		public interface IBasicHessianAPI {
+
+			public String hello();
+			public User getUser();
+		}
+	
+	接口的实现类：
+	package com.service.impl;
+	import com.caucho.hessian.server.HessianServlet;
+	import com.entity.User;
+	import com.service.IBasicHessianAPI;
+
+	/**
+	 * @author CloudSen
+	 * @Date 2017年6月27日 上午10:42:07
+	 * @Version 1.0
+	 * @Description 简单Hessian服务类，用于测试Hessian服务端
+	 */
+	public class BasicHessianServiceAPIImpl extends HessianServlet implements
+			IBasicHessianAPI {
+
+		private static final long serialVersionUID = 3379832948460135339L;
+		private String _greeting = "Hello Hessian";
+		
+		public void set_greeting(String _greeting) {
+			this._greeting = _greeting;
+		}
+
+		@Override
+		public String hello() {
+
+			return _greeting;
+		}
+		
+		@Override
+		public User getUser(){
+			
+			return new User("CloudSen","cloud123");
+		}
+
+	}
+	
+	简单的Java实体类：
+	package com.entity;
+	import java.io.Serializable;
+
+	/** 
+	 * @author CloudSen
+	 * @Date 2017年6月27日 上午11:12:39
+	 * @Version 1.0
+	 * @Description 简单的javabean
+	 */
+	public class User implements Serializable {
+
+		private static final long serialVersionUID = 6527467287087355225L;
+		private String userName = "CloudSen";
+		private String password = "cloudsen";
+		
+		public User(String user, String pwd){
+			
+			userName = user;
+			password = pwd;
+		}
+
+		public String getUserName() {
+			return userName;
+		}
+
+		public String getPassword() {
+			return password;
+		}
+	}
+
+	(2)客户端：Java Project
+		a.创建一个和服务端一模一样的接口和实体类；
+		b.创建一个客户端类，使用HessianProxyFactory调用远程服务器的接口：
+		package com.umbrella.client;
+		import java.net.MalformedURLException;
+		import com.caucho.hessian.client.HessianProxyFactory;
+		import com.umbrella.client.interfaces.IBasicHessianAPI;
+
+		public class BasicClient {
+
+			public static void main(String[] args) {
+				
+				String url="http://localhost:8050/maven_test_spring/helloHessian";
+				HessianProxyFactory factory = new HessianProxyFactory();
+				try {
+					IBasicHessianAPI base = (IBasicHessianAPI)factory
+							.create(IBasicHessianAPI.class, url);
+					System.out.println("URL:"+url);
+					System.out.println("User:"+base.getUser().getUserName());
+					System.out.println("Password:"+base.getUser().getPassword());
+				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	
+
+5.Spring与Hessian整合：
+	(1)web.xml配置：
+		<servlet>
+			<servlet-name>hessian</servlet-name>
+			<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+			<init-param>
+				<param-name>contextConfigLocation</param-name>
+				<param-value>classpath:hessian-servlet.xml</param-value>
+			</init-param>
+		</servlet>
+	
+	(2)xml配置文件hessian-servlet.xml：
+		<?xml version="1.0" encoding="UTF-8"?>
+		<beans xmlns="http://www.springframework.org/schema/beans"
+			   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			   xsi:schemaLocation="http://www.springframework.org/schema/beans
+					http://www.springframework.org/schema/beans/spring-beans.xsd">
+				
+				<!-- hessian -->
+				<bean id="hessianService" class="com.service.impl.BasicHessianServiceAPIImpl"></bean>
+				<bean name="/*.hessian" class="org.springframework.remoting.caucho.HessianServiceExporter">
+					<property name="service" ref="hessianService"></property>
+					<property name="serviceInterface" value="com.service.IBasicHessianAPI"></property>
+				</bean>
+		</beans>
+	
+	

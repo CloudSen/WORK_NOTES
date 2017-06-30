@@ -1,0 +1,147 @@
+Ibatis中$和#的区别：
+
+	#可以进行预编译，进行类型匹配，而$不进行数据类型匹配，$ 的作用实际上是字符串拼接。
+	select * from table where id = #id# ，其中如果字段id为字符型，
+	那么#id#表示的就是'id'类型，如果id为整型，那么#id#就是整型。 
+	select * from table where id = $id$ ，如果字段id为整型，
+	Sql语句就不会出错，但是如果字段id为字符型，
+	那么Sql语句应该写成 select * from table where id = '$id$'
+	
+	在动态拼接sql时，常常会遇到#和$，他们的区别是：
+	1.#是将参数按照字符串传入，$是将参数直接传入
+	2.#相当于是参数变量替换，$相当于是字符串的拼接
+	3.#可以防止sql注入，$不可以
+	所以能使用#的地方一定不使用$
+	
+
+Ibatis 注意事项：
+
+	1.  在配置sql时，可以直接写select * from table，但是一定要配置一个包含数据表全部列的resultMap。
+	2.  如果不指定parameterClass，那么任何带有get/set方法的属性的javabean都可以作为输入参数。
+	3.  # 和 $的区别。
+	4.  <isNotEmpty>和<isNotNull>的区别：
+		如果不传入参数，<isNotEmpty>不会将其中的字符串拼入sql。而<isNotNull>会将其中的字符串拼入sql，但是不赋值。
+	
+Ibatis 标签：
+
+	根标签：
+	<sqlMap></sqlMap>
+	
+	二级标签：
+	
+	sql片段
+	<sql></sql>
+		属性：
+			id
+		
+	
+	缓存
+	<cacheModel></cacheModel>
+	
+	增删改查
+	<delete></delete>	
+	<insert></insert>
+	<update></update>
+	<select></select>
+		属性：
+			id:唯一标识
+			parameterClass:参数类型
+			如果不指定parameterClass，那么任何带有get/set方法的属性的javabean都可以作为输入参数。
+			parameterMap:参数列表
+			resultClass:结果类型
+			resultMap:结果列表
+			cacheModel:缓存模式
+			timeOut:数据库超时时间
+			
+	
+	三级标签：
+	
+	<dynamic></dynamic>
+		属性：
+			prepend:用于拼接一个前缀。它会覆盖掉第一个为true的元素的prepend。
+	
+	判断参数是否为空或为NULL
+	<isEmpty></isEmpty>
+	<isNotEmpty></isNotEmpty>
+		属性：
+			prepend
+			property
+			close和open：包括拼接的sql。
+			
+	判断参数是否为Null
+	<isNull></isNull>
+	<isNotNull></isNotNull>
+		属性：
+			prepend：拼接sql的前缀。
+			property：对应于java的属性
+			close和open：包括拼接的sql。
+			
+	判断传入参数与指定值是否相等。
+	<isEqual></isEqual>
+		属性：
+			prepend：拼接sql的前缀。
+			property：对应于java的属性
+			close和open：包括拼接的sql。
+			compareValue：用于指定与参数比较的值。
+			compareProperty：用于指定与参数比较的属性。
+			
+	
+	大于、大于等于、小于等于、小于		
+	<isGreaterThan></isGreaterThan>
+	<isGreaterEqual></isGreaterEqual>
+	<isLessEqual></isLessEqual>
+	<isLessThan></isLessThan>
+		属性：	
+			prepend
+			property
+			compareValue
+	
+	<include />
+		属性：	
+			refid:被引用的sql的id
+			
+	用于循环输出，以便循环的生成sql。
+	<iterate></iterate>
+		属性：
+			property：对于要输出的集合
+			open和close：用于开始和结束，包括一段拼接的sql。
+			prepend：拼接sql的前缀
+			conjunction：循环输出拼接时需要的连接字符串,用于定义AND或OR
+	
+	如果参数不为null，则执行sql
+	<isParameterPresent></isParameterPresent>
+		属性：
+			prepend：拼接sql的前缀。
+			close和open：包括拼接的sql。
+	
+	如果参数为null，则执行sql
+	<isNotParameterPresent>
+		属性：
+			prepend：拼接sql的前缀。
+			close和open：包括拼接的sql。
+		
+		
+	<result>
+	配置在resultMap下，用于指定结果集中的每一项。
+		属性：
+			property:对应于要输出的字段名，在java程序段可以通过这个属性值获得相应的值
+			colunm:对应于数据表的字段
+			columIndex:对应于数据表字段的索引
+			jdbcType:仅当增删改是可能出现null值的字段，可以设置jdbcType。当该result为DATE类型时，指定jdbcType可以更加明确sql。因为DATE在java里是一种类型，但是在不同的数据库有不同的DATE类型。
+			javaType:对应于java的类型。如果在sql中使用了聚合函数，需要在对应的result中配置该属性，否则取出的是聚合函数的对象，显示出的就是java对象的哈希值。
+			nullValue:空值。
+
+			
+	<selectKey></selectKey>
+	用于获取自增长的序列。
+		属性：
+			resultClass:返回结果的类型。
+			keyProperty:对应键的属性。
+			多用于插入操作，例如：
+			<insert id="addStudent" parameterClass="earl.vo.Student">
+				INSERT INTO STUDENT(NAME,AGE,SEX,MAJOR) VALUES(#name#,#age#,#sex#,#major#)
+				<selectKey resultClass="int" keyProperty="id">
+					SELECT LAST_INSERT_ID() AS ID
+				</selectKey>
+			</insert>
+		id是STUDENT表的主键，通过这条语句可以自动生成id并插入到STUDENT表中。
